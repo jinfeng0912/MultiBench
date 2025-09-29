@@ -4,7 +4,7 @@ import os
 
 sys.path.append(os.getcwd())
 sys.path.append(os.path.dirname(os.path.dirname(os.getcwd())))
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'  # 单 GPU，改成您的 (e.g., '0')
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 from unimodals.common_models import GRU, MLP, Sequential, Identity  # noqa
 from training_structures.Supervised_Learning import train, test  # noqa
@@ -15,13 +15,13 @@ from multiprocessing import freeze_support
 
 # 用我的 mosi_data.pkl (dims [20,5,300])
 traindata, validdata, testdata = get_dataloader(
-    r'E:\Laboratory\datasets\CMU_MOSI\mosi_data.pkl',
+    r'E:\Laboratory\datasets\CMU_MOSI\mosi_bert.pkl',
     robust_test=False, max_pad=True, data_type='mosi')  # 移除 max_seq_len (您的 pkl 已 pad 到 50)
 
-# mosi/mosei (匹配您的 dims: audio=20, visual=5, text=300; early concat=325)
+# mosi/mosei (匹配您的 dims: audio=20, visual=5, text=300; early concat=325)[35,74,768]
 encoders = [Identity().cuda(), Identity().cuda(), Identity().cuda()]  # Identity for raw feats
 head = Sequential(
-    GRU(325, 512, dropout=True, has_padding=False, batch_first=True, last_only=True),  # 325=20+5+300 (early concat)
+    GRU(877, 512, dropout=True, has_padding=False, batch_first=True, last_only=True),  # 877=35+74+768 (early concat)
     MLP(512, 512, 1)
 ).cuda()
 
@@ -42,9 +42,9 @@ if __name__ == '__main__':
 
     train(encoders, fusion, head, traindata, validdata, 20,
           task="regression", optimtype=torch.optim.AdamW,
-          is_packed=False, lr=1e-3, save='mosi_ef_r0.pt', weight_decay=0.01, objective=torch.nn.L1Loss())
+          is_packed=False, lr=1e-3, save='mosi_ef_r0_bert.pt', weight_decay=0.01, objective=torch.nn.L1Loss())
 
     print("Testing:")
-    model = torch.load('mosi_ef_r0.pt', weights_only=False).cuda()
+    model = torch.load('mosi_ef_r0_bert.pt', weights_only=False).cuda()
     test(model=model, test_dataloaders_all=testdata, dataset='mosi', is_packed=False,
          criterion=torch.nn.L1Loss(), task="regression", no_robust=True)
