@@ -229,9 +229,9 @@ def bert_version_data(data, raw_path, keys, max_padding=50, bert_max_len=None):
 
 if __name__ == '__main__':
     # Windows MOSI paths (adapted; ensure files exist)
-    input_pkl_path = r'E:\Laboratory\datasets\CMU_MOSI\mosi_raw.pkl'  # Input raw pkl
-    raw_text_hdf5_path = r'E:\Laboratory\datasets\CMU_MOSI\mosi.hdf5'  # Raw text HDF5
-    output_pkl_path = r'E:\Laboratory\datasets\CMU_MOSI\mosi_bert.pkl'  # Output (overwrites if exists)
+    input_pkl_path = r'E:\Laboratory\datasets\MUSTARD_sarcasm\sarcasm.pkl'  # Input raw feats pkl (vision/audio/text)
+    raw_text_pkl_path = r'E:\Laboratory\datasets\MUSTARD_sarcasm\sarcasm_raw_text.pkl'  # Raw text PKL (NOT HDF5)
+    output_pkl_path = r'E:\Laboratory\datasets\MUSTARD_sarcasm\sarcasm_bert.pkl'
 
     # Load input pkl
     try:
@@ -254,7 +254,7 @@ if __name__ == '__main__':
         # Process fold with bert_version_data (HDF5 for raw text)
         new_fold_data = bert_version_data(
             data=alldata[fold],
-            raw_path=raw_text_hdf5_path,  # Use HDF5 for MOSI raw text
+            raw_path=raw_text_pkl_path,  # Use HDF5 for MOSI raw text
             keys=keys,
             max_padding=50,  # Keep original
             bert_max_len=None  # Dynamic from data
