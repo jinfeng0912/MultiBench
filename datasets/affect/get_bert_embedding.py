@@ -1,26 +1,22 @@
-"""Implements BERT embedding extractors (Adapted for Windows MOSI)."""
+"""Implements BERT embedding extractors."""
 import torch
 from torch import nn
 from transformers import AutoTokenizer, pipeline, BertModel
 import h5py
 import pickle
 import numpy as np
-import sys
-import os  # Added for cross-platform path handling
 
-model_name = "bert-base-uncased"
+
+model_name = "bert-base-uncased" 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 # features_extractor = pipeline('feature-extraction', model=model_name, tokenizer=model_name)
 bert = BertModel.from_pretrained(model_name)
 bert.config.output_hidden_states = True
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"当前使用的计算设备: {device}")
-bert.to(device)
 
-def get_bert_features(all_text, contextual_embedding=False, batch_size=64, max_len=None):
+def get_bert_features(all_text, contextual_embedding=False, batch_size=500, max_len=None):
     """Get bert features from data.
-
+    
     Use pipline to extract all the features, (num_points, max_seq_length, feature_dim): np.ndarray
 
     Args:
@@ -39,21 +35,19 @@ def get_bert_features(all_text, contextual_embedding=False, batch_size=64, max_l
     print(len(all_text))
 
     for i in range(0, len(all_text), batch_size):
-
+        
         inputs = tokenizer(all_text[i: i+batch_size], padding='max_length', truncation=True, max_length=max_len, return_tensors="pt")
-
-        inputs = {key: value.to(device) for key, value in inputs.items()}
 
         bert_feartures = bert(**inputs)
 
         outputs = bert_feartures.hidden_states
         if contextual_embedding:
-            output_bert_features.append(outputs[-1].detach().cpu().numpy())
+            output_bert_features.append(outputs[-1].detach().numpy())
         else:
-            output_bert_features.append(outputs[0].detach().cpu().numpy())
-            print(outputs[0].detach().cpu().numpy().shape)
+            output_bert_features.append(outputs[0].detach().numpy())
+            print(outputs[0].detach().numpy().shape)
         print('i = {} finished!'.format(i))
-
+    
     print(np.concatenate(output_bert_features).shape)
     return np.concatenate(output_bert_features)
 
@@ -72,7 +66,7 @@ def get_rawtext(path, data_kind, vids=None):
     if data_kind == 'hdf5':
         f = h5py.File(path, 'r')
     else:
-        with open(path, 'rb') as f_r:  # Ensured 'rb' for Windows
+        with open(path, 'rb') as f_r:
             f = pickle.load(f_r)
     text_data = []
     new_vids = []
@@ -108,7 +102,7 @@ def get_rawtext(path, data_kind, vids=None):
 
 def max_seq_len(id_list, max_len=50):
     """ Fix dataset to max sequence length.
-
+    
     Cut the id lists with the max length, but didnt do padding here.
     Add the first one as [CLS] and the last one for [SEP].
 
@@ -131,13 +125,13 @@ def max_seq_len(id_list, max_len=50):
 
 def corresponding_other_modality_ids(orig_text, tokenized_text):
     """Align word ids to other modalities.
-
+    
     Since tokenizer splits the word into parts e.g. '##ing' or 'you're' -> 'you', ''', 're'
-    we should get the corresponding ids for other modalities' features applied to modalities
+    we should get the corresponding ids for other modalities' features applied to modalities 
     which aligned to words
 
     Args:
-        orig_text (list):  List of strings corresponding to the original text.
+        orig_text (list):  List of strings corresponding to the original text. 
         tokenized_text (list): List of lists of tokens.
 
     Returns:
@@ -189,8 +183,8 @@ def bert_version_data(data, raw_path, keys, max_padding=50, bert_max_len=None):
     file_type = raw_path.split('.')[-1]
     sarcasm_text, _ = get_rawtext(raw_path, file_type, keys)
 
-    bert_features = get_bert_features(sarcasm_text, contextual_embedding=True, max_len=bert_max_len)  # (N, MAX_LEN, 768) for sarcasm
-
+    bert_features = get_bert_features(sarcasm_text, contextual_embedding=False, max_len=bert_max_len)  # (N, MAX_LEN, 768) for sarcasm
+    
     # get corresponding ids
     other_modality_ids = []
     for origi_text in sarcasm_text:
@@ -228,51 +222,22 @@ def bert_version_data(data, raw_path, keys, max_padding=50, bert_max_len=None):
 
 
 if __name__ == '__main__':
-    # Windows MOSI paths (adapted; ensure files exist)
-    input_pkl_path = r'E:\Laboratory\datasets\MUSTARD_sarcasm\sarcasm.pkl'  # Input raw feats pkl (vision/audio/text)
-    raw_text_pkl_path = r'E:\Laboratory\datasets\MUSTARD_sarcasm\sarcasm_raw_text.pkl'  # Raw text PKL (NOT HDF5)
-    output_pkl_path = r'E:\Laboratory\datasets\MUSTARD_sarcasm\sarcasm_bert.pkl'
 
-    # Load input pkl
-    try:
-        with open(input_pkl_path, 'rb') as f:  # 'rb' for Windows binary
-            alldata = pickle.load(f)
-        print(f"Loaded input: {input_pkl_path}")
-    except FileNotFoundError:
-        print(f"Error: {input_pkl_path} not found. Run preprocess raw first.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Load error: {e}")
-        sys.exit(1)
+    with open('/home/pliang/multibench/affect/sarcasm.pkl', "rb") as f:
+        alldata = pickle.load(f)
 
-    # Process each fold (train, valid, test) - adapted from original sarcasm example
-    for fold in alldata.keys():
-        print(f"\n--- Processing '{fold}' data ---")
-        keys = list(alldata[fold]['id'])  # List of IDs (handle bytes if needed)
-        print(f"{fold} vision shape: {alldata[fold]['vision'].shape}")  # Debug original
+    train_keys = list(alldata['train']['id'])
+    print(alldata['train']['vision'].shape)
 
-        # Process fold with bert_version_data (HDF5 for raw text)
-        new_fold_data = bert_version_data(
-            data=alldata[fold],
-            raw_path=raw_text_pkl_path,  # Use HDF5 for MOSI raw text
-            keys=keys,
-            max_padding=50,  # Keep original
-            bert_max_len=None  # Dynamic from data
-        )
+    raw_path = '/home/pliang/multibench/affect/sarcasm_raw_text.pkl'
 
-        if new_fold_data is not None:
-            alldata[fold]['vision'] = new_fold_data['vision']
-            alldata[fold]['audio'] = new_fold_data['audio']
-            alldata[fold]['text'] = new_fold_data['text']
-            print(f"New {fold} shapes - vision: {new_fold_data['vision'].shape}, audio: {new_fold_data['audio'].shape}, text: {new_fold_data['text'].shape}")
-        else:
-            print(f"Error processing '{fold}' - skipping.")
+    new_train_data = bert_version_data(alldata['train'], raw_path, train_keys)
 
-    # Save output pkl
-    try:
-        with open(output_pkl_path, 'wb') as f:  # 'wb' for Windows binary
-            pickle.dump(alldata, f)
-        print(f"\n✅ MOSI BERT data saved: {output_pkl_path}")
-    except Exception as e:
-        print(f"Save error: {e}")
-        sys.exit(1)
+    print(new_train_data['vision'].shape)
+    print(new_train_data['audio'].shape)
+    print(new_train_data['text'].shape)
+
+    # ori = ['so', 'how', 'she\'s', 'aad', 'it', 'go']
+    # test = ['so', 'how', 'she', '\'', 's', 'aa',  '##d', 'it', 'go']
+    
+    

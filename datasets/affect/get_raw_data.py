@@ -50,7 +50,7 @@ print(len(train_fold))
 print(len(valid_fold))
 print(len(test_fold))
 
-affect_data = h5py.File('E:/Laboratory/datasets/CMU_MOSI/mosi.hdf5', 'r')
+affect_data = h5py.File('/home/pliang/multibench/affect/mosi/mosi.hdf5', 'r')
 print(affect_data.keys())
 
 AUDIO = 'COVAREP'
@@ -229,7 +229,8 @@ def get_audio_visual_text(csds, seq_len, text_data, vids):
 
 if __name__ == "__main__":
 
-    raw_text, vids = get_rawtext('E:/Laboratory/datasets/CMU_MOSI/mosi.hdf5', 'hdf5', keys)
+    raw_text, vids = get_rawtext(
+        '/home/pliang/multibench/affect/mosi/mosi.hdf5', 'hdf5', keys)
     print(raw_text[0])
     print(vids[0])
     text_glove = glove_embeddings(raw_text, vids)
