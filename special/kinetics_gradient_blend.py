@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 
-device = 1
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 16
 num_workers = 1
 sys.path.append(os.getcwd())
@@ -36,15 +36,15 @@ def gettrainloss(model, head, monum, batch_size, num_workers):
     with torch.no_grad():
         for fid in range(22):
             datas = torch.load(
-                '/home/pliang/yiwei/kinetics_small/train/batch_37'+str(fid)+'.pdt')
+                '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/train/batch_37'+str(fid)+'.pdt')
             train_dataloader = DataLoader(
                 datas, shuffle=True, batch_size=batch_size, num_workers=num_workers)
             for j in train_dataloader:
                 total += len(j[0])
-                train_x = j[monum].float().cuda(device)
+                train_x = j[monum].float().to(device)
                 if monum == 1:
                     train_x = train_x.unsqueeze(1)
-                train_y = j[-1].cuda(device)
+                train_y = j[-1].to(device)
                 out = model(train_x)
                 out = head(out)
                 loss = criterion(out, train_y)
@@ -59,10 +59,10 @@ def getvalloss(model, head, loaders, monum):
         for loader in loaders:
             for j in loader:
                 total += len(j[0])
-                train_x = j[monum].float().cuda(device)
+                train_x = j[monum].float().to(device)
                 if monum == 1:
                     train_x = train_x.unsqueeze(1)
-                train_y = j[-1].cuda(device)
+                train_y = j[-1].to(device)
                 out = model(train_x)
                 out = head(out)
                 loss = criterion(out, train_y)
@@ -76,14 +76,14 @@ def gettrainmloss(models, head, fuse, batch_size, num_workers):
     with torch.no_grad():
         for fid in range(22):
             datas = torch.load(
-                '/home/pliang/yiwei/kinetics_small/train/batch_37'+str(fid)+'.pdt')
+                '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/train/batch_37'+str(fid)+'.pdt')
             train_dataloader = DataLoader(
                 datas, shuffle=True, batch_size=batch_size, num_workers=num_workers)
             for j in train_dataloader:
                 total += len(j[0])
-                train_x = [j[0].float().cuda(
-                    device), j[1].unsqueeze(1).float().cuda(device)]
-                train_y = j[-1].cuda(device)
+                train_x = [j[0].float().to(
+                    device), j[1].unsqueeze(1).float().to(device)]
+                train_y = j[-1].to(device)
                 out = head(multimodalcondense(models, fuse, train_x))
                 loss = criterion(out, train_y)
                 losses += loss*len(j[0])
@@ -97,9 +97,9 @@ def getvalmloss(models, head, fuse, loaders):
         for loader in loaders:
             for j in loader:
                 total += len(j[0])
-                train_x = [j[0].float().cuda(
-                    device), j[1].unsqueeze(1).float().cuda(device)]
-                train_y = j[-1].cuda(device)
+                train_x = [j[0].float().to(
+                    device), j[1].unsqueeze(1).float().to(device)]
+                train_y = j[-1].to(device)
                 out = head(multimodalcondense(models, fuse, train_x))
                 loss = criterion(out, train_y)
                 losses += loss*len(j[0])
@@ -168,12 +168,12 @@ r50 = torchvision.models.resnet50(pretrained=True)
 r50.conv1 = torch.nn.Conv2d(
     1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 audio_model = torch.nn.Sequential(r50, MLP(1000, 200, 64))
-unimodal_models = [ResNetLSTMEnc(64).cuda(
-    device), audio_model.cuda(device)]  # encoders
-fuse = Concat().cuda(device)  # fusion
-multimodal_classification_head = MLP(128, 200, 5).cuda(device)
+unimodal_models = [ResNetLSTMEnc(64).to(
+    device), audio_model.to(device)]  # encoders
+fuse = Concat().to(device)  # fusion
+multimodal_classification_head = MLP(128, 200, 5).to(device)
 unimodal_classification_heads = [
-    MLP(64, 200, 5).cuda(device), MLP(64, 200, 5).cuda(device)]
+    MLP(64, 200, 5).to(device), MLP(64, 200, 5).to(device)]
 
 lr = 0.0001
 params = []
@@ -185,8 +185,8 @@ params.extend(multimodal_classification_head.parameters())
 params.extend(fuse.parameters())
 optim = torch.optim.Adam(params, lr=lr)
 
-finetunehead = copy.deepcopy(multimodal_classification_head).cuda(device)
-fusehead = copy.deepcopy(fuse).cuda(device)
+finetunehead = copy.deepcopy(multimodal_classification_head).to(device)
+fusehead = copy.deepcopy(fuse).to(device)
 params = list(finetunehead.parameters())
 if fuse.parameters() is not None:
     params.extend(list(fuse.parameters()))
@@ -196,10 +196,10 @@ bestvalloss = 10000.0
 num_epoch = 60  # 30 # 16
 gb_epoch = 6  # 3 # 2
 finetune_epoch = 3  # 2
-datas = torch.load('/home/pliang/yiwei/kinetics_small/valid/batch_370.pdt')
+datas = torch.load('/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/valid/batch_370.pdt')
 valid_dataloader0 = DataLoader(
     datas, shuffle=False, batch_size=batch_size, num_workers=num_workers)
-datas = torch.load('/home/pliang/yiwei/kinetics_small/valid/batch_371.pdt')
+datas = torch.load('/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/valid/batch_371.pdt')
 valid_dataloader1 = DataLoader(
     datas, shuffle=False, batch_size=batch_size, num_workers=num_workers)
 valid_dataloaders = [valid_dataloader0, valid_dataloader1]
@@ -211,8 +211,8 @@ for ep in tqdm(range(num_epoch//gb_epoch)):
     weights = []
     for monum in range(len(unimodal_models)):
         print("At gb_estimate unimodal "+str(monum))
-        model = copy.deepcopy(unimodal_models[monum]).cuda(device)
-        head = copy.deepcopy(unimodal_classification_heads[monum]).cuda(device)
+        model = copy.deepcopy(unimodal_models[monum]).to(device)
+        head = copy.deepcopy(unimodal_classification_heads[monum]).to(device)
         optim = torch.optim.Adam(
             list(model.parameters()) + list(head.parameters()), lr=lr)
         ltN = gettrainloss(model, head, monum, batch_size, num_workers)
@@ -222,15 +222,15 @@ for ep in tqdm(range(num_epoch//gb_epoch)):
             total = 0
             for fid in range(22):
                 datas = torch.load(
-                    '/home/pliang/yiwei/kinetics_small/train/batch_37'+str(fid)+'.pdt')
+                    '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/train/batch_37'+str(fid)+'.pdt')
                 train_dataloader = DataLoader(
                     datas, shuffle=True, batch_size=batch_size, num_workers=num_workers)
                 for j in train_dataloader:
                     total += len(j[0])
-                    train_x = j[monum].float().cuda(device)
+                    train_x = j[monum].float().to(device)
                     if monum == 1:
                         train_x = train_x.unsqueeze(1)
-                    train_y = j[-1].cuda(device)
+                    train_y = j[-1].to(device)
                     optim.zero_grad()
                     out = model(train_x)
                     out = head(out)
@@ -256,9 +256,9 @@ for ep in tqdm(range(num_epoch//gb_epoch)):
         w = abs(g/(oi*oi))
         weights.append(w)
     print("At gb_estimate multimodal ")
-    allcopies = [copy.deepcopy(x).cuda(device) for x in unimodal_models]
-    mmcopy = copy.deepcopy(multimodal_classification_head).cuda(device)
-    fusecopy = copy.deepcopy(fuse).cuda(device)
+    allcopies = [copy.deepcopy(x).to(device) for x in unimodal_models]
+    mmcopy = copy.deepcopy(multimodal_classification_head).to(device)
+    fusecopy = copy.deepcopy(fuse).to(device)
     params = []
     for model in allcopies:
         params.extend(list(model.parameters()))
@@ -273,15 +273,15 @@ for ep in tqdm(range(num_epoch//gb_epoch)):
         total = 0
         for fid in range(22):
             datas = torch.load(
-                '/home/pliang/yiwei/kinetics_small/train/batch_37'+str(fid)+'.pdt')
+                '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/train/batch_37'+str(fid)+'.pdt')
             train_dataloader = DataLoader(
                 datas, shuffle=True, batch_size=batch_size, num_workers=num_workers)
             for j in train_dataloader:
                 total += len(j[0])
                 # train_x = [x.float().cuda(device) for x in j[:-1]]
-                train_x = [j[0].float().cuda(
-                    device), j[1].unsqueeze(1).float().cuda(device)]
-                train_y = j[-1].cuda(device)
+                train_x = [j[0].float().to(
+                    device), j[1].unsqueeze(1).float().to(device)]
+                train_y = j[-1].to(device)
                 optim.zero_grad()
                 out = mmcopy(multimodalcondense(allcopies, fusecopy, train_x))
                 loss = criterion(out, train_y)
@@ -316,13 +316,13 @@ for ep in tqdm(range(num_epoch//gb_epoch)):
         total = 0
         for fid in range(22):
             datas = torch.load(
-                '/home/pliang/yiwei/kinetics_small/train/batch_37'+str(fid)+'.pdt')
+                '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/train/batch_37'+str(fid)+'.pdt')
             train_dataloader = DataLoader(
                 datas, shuffle=True, batch_size=batch_size, num_workers=num_workers)
             for j in train_dataloader:
-                train_x = [j[0].float().cuda(
-                    device), j[1].unsqueeze(1).float().cuda(device)]
-                train_y = j[2].cuda(device)
+                train_x = [j[0].float().to(
+                    device), j[1].unsqueeze(1).float().to(device)]
+                train_y = j[2].to(device)
                 optim.zero_grad()
                 outs = multimodalcompute(unimodal_models, train_x)
                 catout = fuse(outs, training=True)
@@ -344,14 +344,14 @@ for ep in tqdm(range(num_epoch//gb_epoch)):
     with torch.no_grad():
         for fid in range(22):
             datas = torch.load(
-                '/home/pliang/yiwei/kinetics_small/train/batch_37'+str(fid)+'.pdt')
+                '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/train/batch_37'+str(fid)+'.pdt')
             train_dataloader = DataLoader(
                 datas, shuffle=True, batch_size=batch_size, num_workers=num_workers)
             for j in train_dataloader:
                 # train_x = [x.float().cuda(device) for x in j[:-1]]
-                train_x = [j[0].float().cuda(
-                    device), j[1].unsqueeze(1).float().cuda(device)]
-                train_y = j[2].cuda(device)
+                train_x = [j[0].float().to(
+                    device), j[1].unsqueeze(1).float().to(device)]
+                train_y = j[2].to(device)
                 outs = multimodalcompute(unimodal_models, train_x)
                 for iii in range(len(train_y)):
                     aa = [x[iii].cpu() for x in outs]
@@ -364,9 +364,9 @@ for ep in tqdm(range(num_epoch//gb_epoch)):
         totalloss = 0.0
         for j in ftt_dataloader:
             optimi.zero_grad()
-            train_x = [j[0].float().cuda(
-                device), j[1].unsqueeze(1).float().cuda(device)]
-            train_y = j[-1].cuda(device)
+            train_x = [j[0].float().to(
+                device), j[1].unsqueeze(1).float().to(device)]
+            train_y = j[-1].to(device)
             blendloss = criterion(finetunehead(
                 fusehead(train_x, training=True), training=True), train_y)
             totalloss += blendloss * len(j[0])
@@ -379,9 +379,9 @@ for ep in tqdm(range(num_epoch//gb_epoch)):
             corrects = 0
             for valid_dataloader in valid_dataloaders:
                 for j in valid_dataloader:
-                    valid_x = [j[0].float().cuda(
-                        device), j[1].unsqueeze(1).float().cuda(device)]
-                    valid_y = j[-1].cuda(device)
+                    valid_x = [j[0].float().to(
+                        device), j[1].unsqueeze(1).float().to(device)]
+                    valid_y = j[-1].to(device)
                     outs = multimodalcompute(unimodal_models, valid_x)
                     catout = fusehead(outs, training=False)
                     predicts = finetunehead(catout, training=False)
@@ -402,21 +402,21 @@ for ep in tqdm(range(num_epoch//gb_epoch)):
                            fusehead, finetunehead), 'best_kgrb.pt')
 
 print('testing')
-model = torch.load('best_kgrb.pt').cuda(device)
+model = torch.load('best_kgrb.pt').to(device)
 valid_dataloader = None
 total = 0
 corrects = 0
 totalloss = 0.0
 for fid in range(3):
     datas = torch.load(
-        '/home/pliang/yiwei/kinetics_small/test/batch_37%d.pdt' % fid)
+        '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/test/batch_37%d.pdt' % fid)
     test_dataloader = DataLoader(
         datas, shuffle=False, batch_size=batch_size, num_workers=num_workers)
     with torch.no_grad():
         for j in test_dataloader:
-            valid_x = [j[0].float().cuda(
-                device), j[1].unsqueeze(1).float().cuda(device)]
-            valid_y = j[-1].cuda(device)
+            valid_x = [j[0].float().to(
+                device), j[1].unsqueeze(1).float().to(device)]
+            valid_y = j[-1].to(device)
             predicts = model(valid_x)
             blendloss = criterion(predicts, valid_y.squeeze())
             totalloss += blendloss*len(j[0])

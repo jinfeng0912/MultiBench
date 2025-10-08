@@ -5,10 +5,11 @@ import os
 from torch.utils.data import DataLoader
 
 sys.path.append(os.getcwd())
-model = MLP(400, 200, 5).to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model = MLP(400, 200, 5).to(device)
 optim = torch.optim.Adam(model.parameters(), lr=0.01)
 train_datas, valid_datas, test_datas = torch.load(
-    '/home/pliang/yiwei/features/features.pt')
+    '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/features.pt')
 epochs = 30
 valid_dataloader = DataLoader(valid_datas, shuffle=False, batch_size=40)
 test_dataloader = DataLoader(test_datas, shuffle=False, batch_size=40)
@@ -22,8 +23,8 @@ for ep in range(epochs):
     total = 0
     for j in train_dataloader:
         optim.zero_grad()
-        out = model(j[0].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
-        loss = criterion(out, j[1].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+        out = model(j[0].to(device))
+        loss = criterion(out, j[1].to(device))
         loss.backward()
         optim.step()
         totalloss += loss*len(j[0])
@@ -34,8 +35,8 @@ for ep in range(epochs):
         correct = 0
         totalloss = 0.0
         for j in valid_dataloader:
-            out = model(j[0].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
-            loss = criterion(out, j[1].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+            out = model(j[0].to(device))
+            loss = criterion(out, j[1].to(device))
             totalloss += loss * len(j[0])
             for ii in range(len(out)):
                 total += 1
@@ -55,8 +56,8 @@ with torch.no_grad():
     correct = 0
     totalloss = 0.0
     for j in test_dataloader:
-        out = model(j[0].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
-        loss = criterion(out, j[1].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+        out = model(j[0].to(device))
+        loss = criterion(out, j[1].to(device))
         totalloss += loss
         for ii in range(len(out)):
             total += 1

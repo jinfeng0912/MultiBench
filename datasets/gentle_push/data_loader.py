@@ -94,6 +94,12 @@ class PushTask():
         Returns:
             tuple: Tuple of training dataloader, validation dataloader, and test dataloader
         """
+        # Auto-trim unused modalities to节省内存
+        if modalities is not None:
+            dataset_args["use_vision"] = ("image" in modalities)
+            dataset_args["use_proprioception"] = ("gripper_pos" in modalities)
+            dataset_args["use_haptics"] = ("gripper_sensors" in modalities)
+
         # Load trajectories into memory
         train_trajectories = cls.get_train_trajectories(**dataset_args)
         val_trajectories = cls.get_eval_trajectories(**dataset_args)
@@ -143,7 +149,9 @@ class PushTask():
                 **dataset_args,
             )
         else:
-            return _load_trajectories("gentle_push_1000.hdf5", **dataset_args)
+            # Further reduce memory footprint on low-RAM WSL: use smaller file and fewer trajectories
+            # Previously: ("gentle_push_1000.hdf5", 200)
+            return _load_trajectories(("gentle_push_300.hdf5", 50), **dataset_args)
 
     @classmethod
     def get_eval_trajectories(
@@ -172,27 +180,27 @@ class PushTask():
             trajectories = dict()
             if modalities == None or 'image' in modalities:
                 trajectories['image'] = []
-                for i in range(10):
+                for i in range(1):
                     trajectories['image'].append(_load_trajectories(
                         "gentle_push_300.hdf5", visual_noise=i/10, **dataset_args))
             if modalities == None or 'gripper_pos' in modalities:
                 trajectories['proprio'] = []
-                for i in range(10):
+                for i in range(1):
                     trajectories['proprio'].append(_load_trajectories(
                         "gentle_push_300.hdf5", prop_noise=i/10, **dataset_args))
             if modalities == None or 'gripper_sensors' in modalities:
                 trajectories['haptics'] = []
-                for i in range(10):
+                for i in range(1):
                     trajectories['haptics'].append(_load_trajectories(
                         "gentle_push_300.hdf5", haptics_noise=i/10, **dataset_args))
             if modalities == None or 'controls' in modalities:
                 trajectories['controls'] = []
-                for i in range(10):
+                for i in range(1):
                     trajectories['controls'].append(_load_trajectories(
                         "gentle_push_300.hdf5", controls_noise=i/10, **dataset_args))
             if modalities == None:
                 trajectories['multimodal'] = []
-                for i in range(10):
+                for i in range(1):
                     trajectories['multimodal'].append(_load_trajectories(
                         "gentle_push_300.hdf5", multimodal_noise=i/10, **dataset_args))
             return trajectories

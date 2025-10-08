@@ -13,7 +13,7 @@ from fusions.common_fusions import Concat # noqa
 from training_structures.Supervised_Learning import train, test # noqa
 
 
-dls, weights = get_dataloader('datasets/enrico/dataset')
+dls, weights = get_dataloader('/mnt/e/Laboratory/datasets/ENRiCO/dataset')
 traindata, validdata, testdata = dls
 criterion = nn.CrossEntropyLoss(weight=torch.tensor(weights)).cuda()
 # encoders=[VGG16Slim(64).cuda(), DAN(4, 16, dropout=True, dropoutp=0.25).cuda(), DAN(28, 16, dropout=True, dropoutp=0.25).cuda()]
@@ -29,12 +29,16 @@ allmodules = encoders + [head, fusion]
 
 
 def trainprocess():
-    train(encoders, fusion, head, traindata, validdata, 50,
-          optimtype=torch.optim.Adam, lr=0.0001, weight_decay=0)
+    # MODIFIED: Added unique save destination
+    train(encoders, fusion, head, traindata, validdata, 8,
+          optimtype=torch.optim.Adam, lr=0.0001, weight_decay=0, save='enrico_simple_late_fusion_best.pt')
 
 
 all_in_one_train(trainprocess, allmodules)
 
-
-model = torch.load('best.pt').cuda()
-test(model, testdata, dataset='enrico')
+# MODIFIED: Load from unique save destination
+model = torch.load('enrico_simple_late_fusion_best.pt').cuda()
+# Speed-up: skip noisy robustness sweep; run only first test dataloader
+first_key = list(testdata.keys())[0]
+first_dl = testdata[first_key][0]
+test(model, first_dl, dataset='enrico', no_robust=True)

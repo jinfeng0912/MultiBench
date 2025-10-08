@@ -14,7 +14,7 @@ from training_structures.unimodal import train, test # noqa
 
 
 
-dls, weights = get_dataloader('datasets/enrico/dataset')
+dls, weights = get_dataloader('/mnt/e/Laboratory/datasets/ENRiCO/dataset')
 traindata, validdata, testdata = dls
 modalnum = 0
 encoder = VGG11Slim(16, dropout=True, dropoutp=0.2,
@@ -26,12 +26,15 @@ allmodules = [encoder, head]
 
 
 def trainprocess():
-    train(encoder, head, traindata, validdata, 50, optimtype=torch.optim.Adam,
-          lr=0.0001, weight_decay=0, modalnum=modalnum)
+    # MODIFIED: Added unique save destination
+    train(encoder, head, traindata, validdata, 8, optimtype=torch.optim.Adam,
+          lr=0.0001, weight_decay=0, modalnum=modalnum,
+          save_encoder='enrico_unimodal_0_encoder.pt', save_head='enrico_unimodal_0_head.pt')
 
 
 all_in_one_train(trainprocess, allmodules)
 
-
-model = torch.load('best.pt').cuda()
+# MODIFIED: Load from unique save destination (encoder & head separately)
+encoder = torch.load('enrico_unimodal_0_encoder.pt').cuda()
+head = torch.load('enrico_unimodal_0_head.pt').cuda()
 test(encoder, head, testdata, dataset='enrico', modalnum=modalnum)

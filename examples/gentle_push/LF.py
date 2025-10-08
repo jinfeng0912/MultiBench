@@ -28,8 +28,9 @@ dataset_args = Task.get_dataset_args(args)
 
 fannypack.data.set_cache_path('datasets/gentle_push/cache')
 
+# Reduce memory: smaller subseq & batch. Use required modalities to match 4 encoders
 train_loader, val_loader, test_loader = Task.get_dataloader(
-    16, batch_size=32, drop_last=True)
+    16, modalities=['gripper_pos', 'gripper_sensors', 'image', 'control'], batch_size=4, drop_last=True, sequential_image_rate=1)
 
 encoders = [
     Sequential(Transpose(0, 1), layers.observation_pos_layers(
@@ -48,12 +49,15 @@ loss_state = nn.MSELoss()
 
 train(encoders, fusion, head,
       train_loader, val_loader,
-      20,
+      8,
       task='regression',
       optimtype=optimtype,
       objective=loss_state,
-      lr=0.00001)
+      lr=0.00001,
+      save='gentle_push_LF_best.pt',
+      track_complexity=False)
 
-model = torch.load('best.pt').cuda()
-test(model, test_loader, dataset='gentle push',
-     task='regression', criterion=loss_state)
+model = torch.load('gentle_push_LF_best.pt').cuda()
+# Use validation loader for testing to avoid building robust test loaders
+test(model, val_loader, dataset='gentle push',
+     task='regression', criterion=loss_state, no_robust=True, method_name='gentle_push_LF')

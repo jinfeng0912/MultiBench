@@ -30,7 +30,7 @@ dataset_args = Task.get_dataset_args(args)
 fannypack.data.set_cache_path('datasets/gentle_push/cache')
 
 train_loader, val_loader, test_loader = Task.get_dataloader(
-    16, batch_size=32, drop_last=True)
+    16, batch_size=8, drop_last=True)
 
 encoders = [
     Sequential(Transpose(0, 1), layers.observation_pos_layers(64)),
@@ -46,12 +46,12 @@ loss_state = nn.MSELoss()
 
 train(encoders, fusion, head,
       train_loader, val_loader,
-      20,
+      8,
       task='regression',
       optimtype=optimtype,
       objective=loss_state,
       lr=0.00001)
 
 model = torch.load('best.pt').cuda()
-test(model, test_loader, dataset='gentle push',
-     task='regression', criterion=loss_state)
+test(model, val_loader, dataset='gentle push',
+     task='regression', criterion=loss_state, no_robust=True)

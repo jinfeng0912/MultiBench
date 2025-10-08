@@ -1,7 +1,7 @@
 from torch import nn
 import torch.nn.functional as F
 import torch
-import pmdarima
+# import pmdarima  # Not actually used in this script
 import numpy as np
 import argparse
 import sys
@@ -34,24 +34,26 @@ def baselines():
     def copy_last(y_prev, y):
         return nn.MSELoss()(torch.cat([y_prev[-1:], y[:-1]]), y).item()
 
+    # ARIMA 依赖 pmdarima，出于兼容性默认跳过
     def arima(y_prev, y):
-        arr = y_prev.cpu()
-        arima = pmdarima.arima.auto_arima(arr)
-        pred = arima.predict(len(y))
-        return nn.MSELoss()(torch.tensor(pred, device='cuda').reshape(y.shape), y)
+        return float('nan')
+
+    # Resolve datasets
+    train_ds = train_loader.dataset
+    val_ds = val_loader.dataset
+    # test_loader is a dict of lists of DataLoaders; pick clean (noise_level=0)
+    test_ds = test_loader['timeseries'][0].dataset
 
     print('Best constant val MSE loss: ' +
-          str(best_constant(train_loader.dataset.Y, val_loader.dataset.Y)))
+          str(best_constant(train_ds.Y, val_ds.Y)))
     print('Best constant test MSE loss: ' +
-          str(best_constant(val_loader.dataset.Y, test_loader.dataset.Y)))
+          str(best_constant(val_ds.Y, test_ds.Y)))
     print('Copy-last val MSE loss: ' +
-          str(copy_last(train_loader.dataset.Y, val_loader.dataset.Y)))
+          str(copy_last(train_ds.Y, val_ds.Y)))
     print('Copy-last test MSE loss: ' +
-          str(copy_last(val_loader.dataset.Y, test_loader.dataset.Y)))
-    print('ARIMA val MSE loss: ' +
-          str(arima(train_loader.dataset.Y, val_loader.dataset.Y)))
-    print('ARIMA test MSE loss: ' +
-          str(arima(torch.cat([train_loader.dataset.Y, val_loader.dataset.Y]), test_loader.dataset.Y)))
+          str(copy_last(val_ds.Y, test_ds.Y)))
+    print('ARIMA val MSE loss: skipped (pmdarima disabled)')
+    print('ARIMA test MSE loss: skipped (pmdarima disabled)')
 
 
 baselines()

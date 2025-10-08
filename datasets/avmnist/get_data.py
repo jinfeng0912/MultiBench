@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 
 
-def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, flatten_audio=False, flatten_image=False, unsqueeze_channel=True, generate_sample=False, normalize_image=True, normalize_audio=True):
+def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, flatten_audio=False, flatten_image=False, unsqueeze_channel=True, generate_sample=False, normalize_image=True, normalize_audio=True, max_train=None, max_test=None):
     """Get dataloaders for AVMNIST.
 
     Args:
@@ -29,6 +29,18 @@ def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, f
                                                                  "/audio/train_data.npy"), np.load(data_dir+"/train_labels.npy")]
     tests = [np.load(data_dir+"/image/test_data.npy"), np.load(data_dir +
                                                                "/audio/test_data.npy"), np.load(data_dir+"/test_labels.npy")]
+
+    # Optionally reduce dataset size to lower RAM usage
+    if max_train is not None:
+        max_train = int(max_train)
+        trains[0] = trains[0][:max_train]
+        trains[1] = trains[1][:max_train]
+        trains[2] = trains[2][:max_train]
+    if max_test is not None:
+        max_test = int(max_test)
+        tests[0] = tests[0][:max_test]
+        tests[1] = tests[1][:max_test]
+        tests[2] = tests[2][:max_test]
     if flatten_audio:
         trains[1] = trains[1].reshape(60000, 112*112)
         tests[1] = tests[1].reshape(10000, 112*112)
@@ -36,11 +48,12 @@ def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, f
         _saveimg(trains[0][0:100])
         _saveaudio(trains[1][0:9].reshape(9, 112*112))
     if normalize_image:
-        trains[0] /= 255.0
-        tests[0] /= 255.0
+        # Cast to float32 to avoid default float64 blow-up
+        trains[0] = trains[0].astype(np.float32) / 255.0
+        tests[0] = tests[0].astype(np.float32) / 255.0
     if normalize_audio:
-        trains[1] = trains[1]/255.0
-        tests[1] = tests[1]/255.0
+        trains[1] = trains[1].astype(np.float32) / 255.0
+        tests[1] = tests[1].astype(np.float32) / 255.0
     if not flatten_image:
         trains[0] = trains[0].reshape(60000, 28, 28)
         tests[0] = tests[0].reshape(10000, 28, 28)
@@ -51,8 +64,9 @@ def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, f
         tests[1] = np.expand_dims(tests[1], 1)
     trains[2] = trains[2].astype(int)
     tests[2] = tests[2].astype(int)
-    trainlist = [[trains[j][i] for j in range(3)] for i in range(60000)]
-    testlist = [[tests[j][i] for j in range(3)] for i in range(10000)]
+    # 使用 zip 逐样本打包，避免不同模态张量形状导致的 numpy 拼接报错
+    trainlist = [[i, a, y] for i, a, y in zip(trains[0], trains[1], trains[2])]
+    testlist = [[i, a, y] for i, a, y in zip(tests[0], tests[1], tests[2])]
     valids = DataLoader(trainlist[55000:60000], shuffle=False,
                         num_workers=num_workers, batch_size=batch_size)
     tests = DataLoader(testlist, shuffle=False,

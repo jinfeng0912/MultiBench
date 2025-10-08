@@ -15,7 +15,9 @@ from fusions.common_fusions import Concat
 
 
 traindata, validdata, testdata = get_dataloader(
-    '/home/pliang/yiwei/avmnist/_MFAS/avmnist')
+    '/mnt/e/Laboratory/datasets/AV_MNIST',
+    batch_size=16,
+    num_workers=0)
 channels = 6
 
 classes = 10
@@ -32,7 +34,7 @@ intermediates = [MLP(n_latent, n_latent//2, n_latent//2).cuda(),
 head = MLP(n_latent//2, 40, classes).cuda()
 objective = MFM_objective(2.0, [sigmloss1dcentercrop(
     28, 34), sigmloss1dcentercrop(112, 130)], [1.0, 1.0])
-train(encoders, fuse, head, traindata, validdata, 25, decoders+intermediates,
+train(encoders, fuse, head, traindata, validdata, 1, decoders+intermediates,
       objective=objective, objective_args_dict={'decoders': decoders, 'intermediates': intermediates})
 model = torch.load('best.pt')
 test(model, testdata, no_robust=True)

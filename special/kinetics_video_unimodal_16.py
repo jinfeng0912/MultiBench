@@ -6,9 +6,11 @@ from torch.utils.data import DataLoader
 sys.path.append(os.getcwd())
 #r3d = torchvision.models.video.r3d_18(pretrained=True)
 # model=torch.nn.Sequential(r3d,torch.load('best1.pt')).to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
-model = torch.load('best2.pt').to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model = torch.load('best2.pt').to(device)
 optim = torch.optim.Adam(model.parameters(), lr=0.0001)
-datas = torch.load('/home/pliang/yiwei/kinetics_small/valid/batch0.pdt')
+datas = torch.load('/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/valid/batch0.pdt')
 criterion = torch.nn.CrossEntropyLoss()
 
 epochs = 15
@@ -21,13 +23,13 @@ for ep in range(epochs):
     for i in range(24):
         print("epoch "+str(ep)+" subiter "+str(i))
         datas = torch.load(
-            '/home/pliang/yiwei/kinetics_small/train/batch'+str(i)+'.pdt')
+            '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/train/batch'+str(i)+'.pdt')
         train_dataloader = DataLoader(datas, shuffle=True, batch_size=45)
         for j in train_dataloader:
             optim.zero_grad()
-            out = model(j[0].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+            out = model(j[0].to(device))
             
-            loss = criterion(out, j[1].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+            loss = criterion(out, j[1].to(device))
             loss.backward()
             optim.step()
             totalloss += loss*len(j[0])
@@ -38,8 +40,8 @@ for ep in range(epochs):
         correct = 0
         totalloss = 0.0
         for j in valid_dataloader:
-            out = model(j[0].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
-            loss = criterion(out, j[1].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+            out = model(j[0].to(device))
+            loss = criterion(out, j[1].to(device))
             totalloss += loss
             for ii in range(len(out)):
                 total += 1
@@ -55,15 +57,15 @@ for ep in range(epochs):
 
 print('testing')
 valid_dataloader = None
-datas = torch.load('/home/pliang/yiwei/kinetics_small/test/batch0.pdt')
+datas = torch.load('/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/test/batch0.pdt')
 test_dataloader = DataLoader(datas, shuffle=False, batch_size=45)
 with torch.no_grad():
     total = 0
     correct = 0
     totalloss = 0.0
     for j in test_dataloader:
-        out = model(j[0].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
-        loss = criterion(out, j[1].to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+        out = model(j[0].to(device))
+        loss = criterion(out, j[1].to(device))
         totalloss += loss
         for ii in range(len(out)):
             total += 1

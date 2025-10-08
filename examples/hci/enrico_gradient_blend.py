@@ -12,7 +12,7 @@ from fusions.common_fusions import Concat # noqa
 from training_structures.gradient_blend import train, test # noqa
 
 
-dls, weights = get_dataloader('datasets/enrico/dataset')
+dls, weights = get_dataloader('/mnt/e/Laboratory/datasets/ENRiCO/dataset')
 traindata, validdata, testdata = dls
 criterion = nn.CrossEntropyLoss(weight=torch.tensor(weights)).cuda()
 # encoders=[VGG16Slim(64).cuda(), DAN(4, 16, dropout=True, dropoutp=0.25).cuda(), DAN(28, 16, dropout=True, dropoutp=0.25).cuda()]
@@ -30,12 +30,17 @@ allmodules = encoders + [mult_head, fusion] + uni_head
 
 
 def trainprocess():
-    train(encoders, mult_head, uni_head, fusion, traindata, validdata, 50,
-          gb_epoch=10, optimtype=torch.optim.Adam, lr=0.0001, weight_decay=0)
+    # MODIFIED: Added unique save destination using 'savedir'
+    train(encoders, mult_head, uni_head, fusion, traindata, validdata, 8,
+          gb_epoch=8, optimtype=torch.optim.Adam, lr=0.0001, weight_decay=0,
+          savedir='enrico_gradient_blend_best.pt', track_complexity=False)
 
 
 all_in_one_train(trainprocess, allmodules)
 
-
-model = torch.load('best.pt').cuda()
-test(model, testdata, dataset='enrico')
+# MODIFIED: Load from unique save destination
+model = torch.load('enrico_gradient_blend_best.pt').cuda()
+# Speed-up: skip noisy robustness sweep
+first_key = list(testdata.keys())[0]
+first_dl = testdata[first_key][0]
+test(model, first_dl, dataset='enrico', no_robust=True)

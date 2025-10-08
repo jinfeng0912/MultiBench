@@ -188,7 +188,7 @@ def train(
                     loss = deal_with_objective(
                         objective, out, j[-1], objective_args_dict)
                     totalloss += loss*len(j[-1])
-                    
+
                     if task == "classification":
                         pred.append(torch.argmax(out, 1))
                     elif task == "multilabel":

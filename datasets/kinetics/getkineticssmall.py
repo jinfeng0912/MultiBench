@@ -82,10 +82,10 @@ def getdata(datalist, splitsize=50):
                           files[i*splitsize+j]+' '+zemp_dir)
                 # os.system('mv '+trainhome+category+'/'+files[i*splitsize+j]+' '+trainhome+'zemp/')
             # a=getkinetics(trainhome,trainhome,['zemp'],150,catacount,2,(224,224))
-            a = getkinetics(trainhome, '/home/pliang/yiwei/kinetics/ActivityNet/Crawler/Kinetics/temp', [
+    a = getkinetics(trainhome, '/mnt/e/Laboratory/datasets/Kinetics400/temp', [
                             'zemp'], 150, catacount, 2, (224, 224))
             exit()
-            torch.save(a, '/data/yiwei/kinetics_small/test/' +
+            torch.save(a, '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/test/' +
                        category+str(i)+'.pt')
             os.system('mv '+trainhome+'zemp/* '+trainhome+category)
         catacount += 1

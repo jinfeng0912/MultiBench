@@ -1,14 +1,14 @@
 import sys
 import os
 sys.path.insert(0, os.getcwd())
-from fusions.robotics.sensor_fusion import SensorFusionSelfSupervised, roboticsConcat
+from fusions.sensor_fusion import SensorFusionSelfSupervised, roboticsConcat
 from utils.helper_modules import Sequential2
 from torchvision import transforms
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import DataLoader
 from datasets.robotics.get_data import get_data
 from fusions.common_fusions import LowRankTensorFusion
-from robotics_utils import set_seeds
+from examples.robotics.robotics_utils import set_seeds
 from training_structures.Supervised_Learning import train, test
 from unimodals.robotics.decoders import ContactDecoder
 from unimodals.common_models import MLP
@@ -63,7 +63,7 @@ class selfsupervised:
         self.loss_contact_next = nn.BCEWithLogitsLoss()
 
         self.train_loader, self.val_loader, _ = get_data(
-            self.device, self.configs, "/home/pliang/multibench/MultiBench-robotics/")
+    self.device, self.configs, self.configs['dataset'])
 
     def train(self):
         print(len(self.train_loader.dataset), len(self.val_loader.dataset))
@@ -75,12 +75,12 @@ class selfsupervised:
                 f.write(f'{x}\n')
         train(self.encoders, self.fusion, self.head,
               self.train_loader, self.val_loader,
-              15,
+              1,
               optimtype=self.optimtype,
               lr=self.configs['lr'])
 
 
 with open('examples/robotics/training_default.yaml') as f:
-    configs = yaml.load(f)
+    configs = yaml.load(f, Loader=yaml.FullLoader)
 
 selfsupervised(configs).train()

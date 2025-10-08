@@ -5,3 +5,4 @@ torchtext
 scikit-learn
 matplotlib
 h5py
+numpy

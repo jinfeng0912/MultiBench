@@ -11,12 +11,8 @@ from unimodals.common_models import Identity, MLP # noqa
 from datasets.affect.get_data import get_dataloader # noqa
 from fusions.common_fusions import Concat # noqa
 
-
-# mosi_data.pkl, mosei_senti_data.pkl
-# mosi_raw.pkl, mosei_raw.pkl, sarcasm.pkl, humor.pkl
-# raw_path: mosi.hdf5, mosei.hdf5, sarcasm_raw_text.pkl, humor_raw_text.pkl
-traindata, validdata, test_robust = get_dataloader('/home/paul/MultiBench/mosi_data.pkl', robust_test=False, max_pad=True)
-
+# MODIFIED: Changed data path to mosei_senti_data.pkl
+traindata, validdata, test_robust = get_dataloader('/mnt/e/Laboratory/datasets/CMU_MOSEI/mosei_senti_data.pkl', robust_test=False, max_pad=True)
 
 class HParams():
         num_heads = 8
@@ -33,14 +29,15 @@ class HParams():
         all_steps = False
 
 encoders = [Identity().cuda(), Identity().cuda(), Identity().cuda()]
-fusion = MULTModel(3, [20, 5, 300], hyp_params=HParams).cuda()
-# fusion = MULTModel(3, [371, 81, 300], hyp_params=HParams).cuda()
+# Dimensions are assumed to be compatible for mosei_senti_data
+fusion = MULTModel(3, [35, 74, 300], hyp_params=HParams).cuda()
 head = Identity().cuda()
 
-train(encoders, fusion, head, traindata, validdata, 100, task="regression", optimtype=torch.optim.AdamW, early_stop=False, is_packed=False, lr=1e-3, clip_val=1.0, save='mosi_mult_best.pt', weight_decay=0.01, objective=torch.nn.L1Loss())
+# MODIFIED: Changed saved model name to mosei
+train(encoders, fusion, head, traindata, validdata, 15, task="regression", optimtype=torch.optim.AdamW, early_stop=False, is_packed=False, lr=1e-3, clip_val=1.0, save='mosei_mult_best.pt', weight_decay=0.01, objective=torch.nn.L1Loss())
 
 print("Testing:")
-model = torch.load('mosi_mult_best.pt').cuda()
-
-test(model=model, test_dataloaders_all=test_robust, dataset='mosi', is_packed=False,
+# MODIFIED: Changed loaded model name and test dataset name
+model = torch.load('mosei_mult_best.pt').cuda()
+test(model=model, test_dataloaders_all=test_robust, dataset='mosei', is_packed=False,
      criterion=torch.nn.L1Loss(), task='posneg-classification', no_robust=True)

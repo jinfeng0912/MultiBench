@@ -56,7 +56,7 @@ class selfsupervised:
         self.loss_contact_next = nn.BCEWithLogitsLoss()
 
         self.train_loader, self.val_loader = get_data(
-            self.device, self.configs, "/home/pliang/multibench/MultiBench-robotics/", unimodal='image', output='ee_yaw_next')
+    self.device, self.configs, self.configs['dataset'], unimodal='image', output='ee_yaw_next')
 
     def train(self):
         print(len(self.train_loader.dataset), len(self.val_loader.dataset))

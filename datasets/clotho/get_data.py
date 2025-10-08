@@ -3,7 +3,7 @@ from .clotho_data_loader import get_clotho_loader
 from pathlib import Path
 
 
-def get_dataloaders(path_to_clotho, input_modal='features', output_modal='words_ind', num_workers=1, shuffle_train=True, batch_size=20):
+def get_dataloaders(path_to_clotho, input_modal='features', output_modal='words_ind', num_workers=1, shuffle_train=True, batch_size=20, load_into_memory=False):
     """Get dataloaders for CLOTHO dataset.
 
     Args:
@@ -13,12 +13,13 @@ def get_dataloaders(path_to_clotho, input_modal='features', output_modal='words_
         num_workers (int, optional): Number of workers. Defaults to 1.
         shuffle_train (bool, optional): Whether to shuffle training data or not. Defaults to True.
         batch_size (int, optional): Batch size. Defaults to 20.
+        load_into_memory (bool, optional): Load all data into memory (faster but uses more RAM). Defaults to False.
 
     Returns:
         tuple: Tuple of (training dataloader, validation dataloader)
     """
     train_dataloader = get_clotho_loader(Path(path_to_clotho+'/data'), 'development', input_modal,
-                                         output_modal, True, batch_size, 'max', shuffle=shuffle_train, num_workers=num_workers)
+                                         output_modal, load_into_memory, batch_size, 'max', shuffle=shuffle_train, num_workers=num_workers)
     valid_dataloader = get_clotho_loader(Path(path_to_clotho+'/data'), 'evaluation', input_modal,
-                                         output_modal, True, batch_size, 'max', shuffle=False, num_workers=num_workers)
+                                         output_modal, load_into_memory, batch_size, 'max', shuffle=False, num_workers=num_workers)
     return train_dataloader, valid_dataloader

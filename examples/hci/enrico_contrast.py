@@ -14,7 +14,7 @@ from training_structures.Supervised_Learning import train, test # noqa
 
 
 
-dls, weights = get_dataloader('datasets/enrico/dataset')
+dls, weights = get_dataloader('/mnt/e/Laboratory/datasets/ENRiCO/dataset')
 traindata, validdata, testdata = dls
 criterion = nn.CrossEntropyLoss(weight=torch.tensor(weights)).cuda()
 # encoders=[VGG16Slim(64).cuda(), DAN(4, 16, dropout=True, dropoutp=0.25).cuda(), DAN(28, 16, dropout=True, dropoutp=0.25).cuda()]
@@ -31,13 +31,16 @@ allmodules = encoders + [refiner, head, fusion]
 
 
 def trainprocess():
-    train(encoders, fusion, head, traindata, validdata, 50, [refiner], optimtype=torch.optim.Adam, lr=0.0001,
-          weight_decay=0, task="classification", objective=RefNet_objective(0.1), objective_args_dict={'refiner': refiner})
+    # MODIFIED: Added unique save destination
+    train(encoders, fusion, head, traindata, validdata, 8, [refiner], optimtype=torch.optim.Adam, lr=0.0001,
+          weight_decay=0, task="classification", objective=RefNet_objective(0.1), objective_args_dict={'refiner': refiner},
+          save='enrico_contrast_best.pt')
 
 
 all_in_one_train(trainprocess, allmodules)
 
 print("Testing:")
-model = torch.load('best.pt').cuda()
+# MODIFIED: Load from unique save destination
+model = torch.load('enrico_contrast_best.pt').cuda()
 
 test(model, testdata, dataset='enrico')

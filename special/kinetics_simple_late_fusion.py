@@ -20,7 +20,7 @@ def getallparams(li):
     return params
 
 
-device = 0  # 1
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 16  # 8 # 5
 num_workers = 1  # 1
 sys.path.append(os.getcwd())
@@ -74,10 +74,10 @@ r50 = torchvision.models.resnet50(pretrained=True)
 r50.conv1 = torch.nn.Conv2d(
     1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 audio_model = torch.nn.Sequential(r50, MLP(1000, 200, 64))
-encoders = [ResNetLSTMEnc(64).cuda(device), audio_model.cuda(device)]
-fusion = Concat().cuda(device)
-head = MLP(64+64, 200, 5).cuda(device)
-model = MMDL(encoders, fusion, head, False).cuda(device)
+encoders = [ResNetLSTMEnc(64).to(device), audio_model.to(device)]
+fusion = Concat().to(device)
+head = MLP(64+64, 200, 5).to(device)
+model = MMDL(encoders, fusion, head, False).to(device)
 # odel=torch.load('best_kslf.pt').cuda(device)
 optim = torch.optim.Adam(model.parameters(), lr=0.0001)
 criterion = torch.nn.CrossEntropyLoss()
@@ -92,16 +92,16 @@ def train(ep=0):
     for fid in range(22):
         print("epoch "+str(ep)+" subiter "+str(fid))
         datas = torch.load(
-            '/home/pliang/yiwei/kinetics_small/train/batch_37'+str(fid)+'.pdt')
+            '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/train/batch_37'+str(fid)+'.pdt')
         print(len(datas))
         
         train_dataloader = DataLoader(
             datas, shuffle=True, batch_size=batch_size, num_workers=num_workers)
         for j in train_dataloader:
             optim.zero_grad()
-            out = model([i.float().cuda(device)
+            out = model([i.float().to(device)
                         for i in j[:-1]], training=True)
-            loss = criterion(out, j[2].cuda(device))
+            loss = criterion(out, j[2].to(device))
             loss.backward()
             optim.step()
             totalloss += loss*len(j[0])
@@ -115,22 +115,22 @@ def train(ep=0):
 num_data = 0
 for fid in range(22):
     datas = torch.load(
-        '/home/pliang/yiwei/kinetics_small/train/batch_37'+str(fid)+'.pdt')
+        '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/train/batch_37'+str(fid)+'.pdt')
     num_data += len(datas)
 for fid in range(2):
     datas = torch.load(
-        '/home/pliang/yiwei/kinetics_small/valid/batch_37%d.pdt' % fid)
+        '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/valid/batch_37%d.pdt' % fid)
     num_data += len(datas)
 for fid in range(3):
     datas = torch.load(
-        '/home/pliang/yiwei/kinetics_small/test/batch_37%d.pdt' % fid)
+        '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/test/batch_37%d.pdt' % fid)
     num_data += len(datas)
 
 '''
 epochs = 15
-datas = torch.load('/home/pliang/yiwei/kinetics_small/valid/batch_370.pdt')
+datas = torch.load('/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/valid/batch_370.pdt')
 valid_dataloader0 = DataLoader(datas,shuffle=False,batch_size=batch_size,num_workers=num_workers)
-datas = torch.load('/home/pliang/yiwei/kinetics_small/valid/batch_371.pdt')
+datas = torch.load('/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/valid/batch_371.pdt')
 valid_dataloader1 = DataLoader(datas,shuffle=False,batch_size=batch_size,num_workers=num_workers)
 valid_dataloaders = [valid_dataloader0, valid_dataloader1]
 bestvaloss=1000
@@ -144,8 +144,8 @@ for ep in tqdm(range(epochs)):
     with torch.no_grad():
         for valid_dataloader in valid_dataloaders:
             for j in valid_dataloader:
-                out = model([i.float().cuda(device) for i in j[:-1]],training=False)
-                loss = criterion(out,j[2].cuda(device))
+                out = model([i.float().to(device) for i in j[:-1]],training=False)
+                loss = criterion(out,j[2].to(device))
                 totalloss += loss*len(j[0])
                 for ii in range(len(out)):
                     total += 1
@@ -168,14 +168,14 @@ correct = 0
 totalloss = 0.0
 for fid in range(3):
     datas = torch.load(
-        '/home/pliang/yiwei/kinetics_small/test/batch_37%d.pdt' % fid)
+        '/mnt/e/Laboratory/datasets/Kinetics400/kinetics_small/test/batch_37%d.pdt' % fid)
     test_dataloader = DataLoader(
         datas, shuffle=False, batch_size=batch_size, num_workers=num_workers)
     with torch.no_grad():
         for j in test_dataloader:
-            out = model([i.float().cuda(device)
-                        for i in j[:-1]], training=False)
-            loss = criterion(out, j[2].cuda(device))
+            out = model([i.float().to(device)
+                          for i in j[:-1]], training=False)
+            loss = criterion(out, j[2].to(device))
             totalloss += loss
             for ii in range(len(out)):
                 total += 1
