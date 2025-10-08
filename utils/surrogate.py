@@ -138,10 +138,14 @@ class SurrogateDataloader():
                 conf_list.append(datum[0])
                 acc_list.append(datum[1])
 
+            # ensure tensors are on CPU before converting to numpy
+            conf_list = [c.detach().cpu().numpy() if torch.is_tensor(c) else c for c in conf_list]
             conf_list = np.transpose(np.asarray(
                 conf_list, np.float32), (1, 0, 2))
 
             dataset_conf.append(np.array(conf_list, np.float32))
+            # some acc entries might be tensors on GPU
+            acc_list = [a.detach().cpu().item() if torch.is_tensor(a) else float(a) for a in acc_list]
             dataset_acc.append(np.expand_dims(
                 np.array(acc_list, np.float32), 1))
 

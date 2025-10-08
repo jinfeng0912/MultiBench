@@ -75,7 +75,7 @@ class selfsupervised:
                 f.write(f'{x}\n')
         train(self.encoders, self.fusion, self.head,
               self.train_loader, self.val_loader,
-              1,
+              4,
               optimtype=self.optimtype,
               lr=self.configs['lr'])
 

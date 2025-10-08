@@ -15,7 +15,11 @@ from fusions.MVAE import ProductOfExperts_Zipped
 
 
 traindata, validdata, testdata = get_dataloader(
-    '/mnt/e/Laboratory/datasets/AV_MNIST')
+    '/mnt/e/Laboratory/datasets/AV_MNIST',
+    batch_size=32,
+    num_workers=0,
+    max_train=12000,
+    max_test=3000)
 
 classes = 10
 n_latent = 200
@@ -30,7 +34,7 @@ decoders = [DeLeNet(1, channels, 3, n_latent).cuda(),
 head = MLP(n_latent, 40, classes).cuda()
 elbo = MVAE_objective(2.0, [sigmloss1dcentercrop(
     28, 34), sigmloss1dcentercrop(112, 130)], [1.0, 1.0], annealing=0.0)
-train(encoders, fuse, head, traindata, validdata, 8, decoders,
+train(encoders, fuse, head, traindata, validdata, 10, decoders,
       objective=elbo, objective_args_dict={'decoders': decoders})
 mvae = torch.load('best.pt')
 test(mvae, testdata, no_robust=True)

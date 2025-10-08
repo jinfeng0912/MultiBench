@@ -1,4 +1,0 @@
-cd D:\Programming\python\laboratory\MultiBench
-d:
-conda activate limu
-python examples\affect\affect_gradient_blend.py && python examples\affect\affect_lf_transformer.py && python examples\affect\affect_tf.py

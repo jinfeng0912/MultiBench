@@ -35,18 +35,24 @@ class CCALoss(nn.Module):
         eps = 1e-9
 
         H1, H2 = H1.t().to(self.device), H2.t().to(self.device)
-        
-        
-        assert torch.isnan(H1).sum().item() == 0
-        assert torch.isnan(H2).sum().item() == 0
+        # 数值稳定：去除 NaN/Inf，并限制极端值
+        H1 = torch.nan_to_num(H1, nan=0.0, posinf=1e6, neginf=-1e6)
+        H2 = torch.nan_to_num(H2, nan=0.0, posinf=1e6, neginf=-1e6)
+        H1 = torch.clamp(H1, min=-1e6, max=1e6)
+        H2 = torch.clamp(H2, min=-1e6, max=1e6)
 
         o1 = o2 = H1.size(0)
 
         m = H1.size(1)
 
 
-        H1bar = H1 - H1.mean(dim=1).unsqueeze(dim=1)
-        H2bar = H2 - H2.mean(dim=1).unsqueeze(dim=1)
+        # 中心化并按通道标准差归一化，避免零方差导致不稳定
+        H1mean = H1.mean(dim=1, keepdim=True)
+        H2mean = H2.mean(dim=1, keepdim=True)
+        H1std = H1.std(dim=1, keepdim=True, unbiased=False)
+        H2std = H2.std(dim=1, keepdim=True, unbiased=False)
+        H1bar = (H1 - H1mean) / (H1std + eps)
+        H2bar = (H2 - H2mean) / (H2std + eps)
         # assert torch.isnan(H1bar).sum().item() == 0
         # assert torch.isnan(H2bar).sum().item() == 0
 

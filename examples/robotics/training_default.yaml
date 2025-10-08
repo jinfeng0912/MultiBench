@@ -40,5 +40,13 @@ dataset: "/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/"
 
 val_ratio: 0.20
 cuda: True
-num_workers: 8
+num_workers: 4
 img_record_n: 500
+
+# Speed-up controls (added)
+max_files: 20
+skip_pairing: true
+pairing_tolerance: 0.06
+max_pair_trials: 20
+pairs_cache_dir: "/mnt/e/Laboratory/datasets/Vision&Touch/pairs_cache"
+verbose_pairing: true

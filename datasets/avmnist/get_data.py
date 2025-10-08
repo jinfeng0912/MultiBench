@@ -7,7 +7,10 @@ from torch.utils.data import DataLoader
 
 
 
-def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, flatten_audio=False, flatten_image=False, unsqueeze_channel=True, generate_sample=False, normalize_image=True, normalize_audio=True, max_train=None, max_test=None):
+def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True,
+                   flatten_audio=False, flatten_image=False, unsqueeze_channel=True,
+                   generate_sample=False, normalize_image=True, normalize_audio=True,
+                   max_train=None, max_test=None, val_ratio=5000/60000):
     """Get dataloaders for AVMNIST.
 
     Args:
@@ -25,10 +28,12 @@ def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, f
     Returns:
         tuple: Tuple of (training dataloader, validation dataloader, test dataloader)
     """
-    trains = [np.load(data_dir+"/image/train_data.npy"), np.load(data_dir +
-                                                                 "/audio/train_data.npy"), np.load(data_dir+"/train_labels.npy")]
-    tests = [np.load(data_dir+"/image/test_data.npy"), np.load(data_dir +
-                                                               "/audio/test_data.npy"), np.load(data_dir+"/test_labels.npy")]
+    trains = [np.load(data_dir+"/image/train_data.npy"),
+              np.load(data_dir+"/audio/train_data.npy"),
+              np.load(data_dir+"/train_labels.npy")]
+    tests = [np.load(data_dir+"/image/test_data.npy"),
+             np.load(data_dir+"/audio/test_data.npy"),
+             np.load(data_dir+"/test_labels.npy")]
 
     # Optionally reduce dataset size to lower RAM usage
     if max_train is not None:
@@ -41,9 +46,13 @@ def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, f
         tests[0] = tests[0][:max_test]
         tests[1] = tests[1][:max_test]
         tests[2] = tests[2][:max_test]
+    # current sizes after optional subsetting
+    n_train = int(trains[0].shape[0])
+    n_test = int(tests[0].shape[0])
+
     if flatten_audio:
-        trains[1] = trains[1].reshape(60000, 112*112)
-        tests[1] = tests[1].reshape(10000, 112*112)
+        trains[1] = trains[1].reshape(n_train, 112*112)
+        tests[1] = tests[1].reshape(n_test, 112*112)
     if generate_sample:
         _saveimg(trains[0][0:100])
         _saveaudio(trains[1][0:9].reshape(9, 112*112))
@@ -55,8 +64,8 @@ def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, f
         trains[1] = trains[1].astype(np.float32) / 255.0
         tests[1] = tests[1].astype(np.float32) / 255.0
     if not flatten_image:
-        trains[0] = trains[0].reshape(60000, 28, 28)
-        tests[0] = tests[0].reshape(10000, 28, 28)
+        trains[0] = trains[0].reshape(n_train, 28, 28)
+        tests[0] = tests[0].reshape(n_test, 28, 28)
     if unsqueeze_channel:
         trains[0] = np.expand_dims(trains[0], 1)
         tests[0] = np.expand_dims(tests[0], 1)
@@ -67,11 +76,20 @@ def get_dataloader(data_dir, batch_size=40, num_workers=8, train_shuffle=True, f
     # 使用 zip 逐样本打包，避免不同模态张量形状导致的 numpy 拼接报错
     trainlist = [[i, a, y] for i, a, y in zip(trains[0], trains[1], trains[2])]
     testlist = [[i, a, y] for i, a, y in zip(tests[0], tests[1], tests[2])]
-    valids = DataLoader(trainlist[55000:60000], shuffle=False,
+
+    # dynamic split for validation set
+    val_count = int(round(len(trainlist) * float(val_ratio)))
+    if val_count <= 0:
+        val_count = min(1000, max(1, len(trainlist)//10))
+    if val_count >= len(trainlist):
+        val_count = max(1, len(trainlist) - 1)
+    split_index = len(trainlist) - val_count
+
+    valids = DataLoader(trainlist[split_index:], shuffle=False,
                         num_workers=num_workers, batch_size=batch_size)
     tests = DataLoader(testlist, shuffle=False,
                        num_workers=num_workers, batch_size=batch_size)
-    trains = DataLoader(trainlist[0:55000], shuffle=train_shuffle,
+    trains = DataLoader(trainlist[:split_index], shuffle=train_shuffle,
                         num_workers=num_workers, batch_size=batch_size)
     return trains, valids, tests
 

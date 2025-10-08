@@ -12,7 +12,11 @@ from fusions.common_fusions import Concat
 from training_structures.Supervised_Learning import train, test
 
 traindata, validdata, testdata = get_dataloader(
-    '/mnt/e/Laboratory/datasets/AV_MNIST', batch_size=16, num_workers=0)
+    '/mnt/e/Laboratory/datasets/AV_MNIST',
+    batch_size=32,
+    num_workers=0,
+    max_train=12000,
+    max_test=3000)
 channels = 6
 encoders = [Sequential2(LeNet(1, channels, 3), nn.Linear(
     channels*8, channels*32)).cuda(), LeNet(1, channels, 5).cuda()]
@@ -20,7 +24,7 @@ head = MLP(channels*64, 100, 10).cuda()
 refiner = MLP(channels*64, 1000, 13328).cuda()
 fusion = Concat().cuda()
 
-train(encoders, fusion, head, traindata, validdata, 1, [
+train(encoders, fusion, head, traindata, validdata, 10, [
       refiner], optimtype=torch.optim.SGD, lr=0.005, objective=RefNet_objective(0.1), objective_args_dict={'refiner': refiner}, save='avmnist_refnet_best.pt')
 
 print("Testing:")

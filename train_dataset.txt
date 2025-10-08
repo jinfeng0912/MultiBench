@@ -1,0 +1,14 @@
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_10_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_13_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_14_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_15_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_16_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_17_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_18_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_1_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_2_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_3_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_4_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_5_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_8_1000.h5
+/mnt/e/Laboratory/datasets/Vision&Touch/triangle_real_data/20190408_183047_triangle_0_journal_0_9_1000.h5

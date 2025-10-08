@@ -10,18 +10,18 @@ from training_structures.unimodal import train, test
 
 modalnum = 0
 traindata, validdata, testdata = get_dataloader(
-    '/home/hejinfeng/datasets/AV_MNIST',
-    batch_size=8,
+    '/mnt/e/Laboratory/datasets/AV_MNIST',
+    batch_size=16,
     num_workers=0,
-    max_train=10000,
-    max_test=2000)
+    max_train=12000,
+    max_test=3000)
 channels = 3
 # encoders=[LeNet(1,channels,3).cuda(),LeNet(1,channels,5).cuda()]
 encoder = LeNet(1, channels, 3).cuda()
 head = MLP(channels*8, 100, 10).cuda()
 
 
-train(encoder, head, traindata, validdata, 1, optimtype=torch.optim.SGD,
+train(encoder, head, traindata, validdata, 10, optimtype=torch.optim.SGD,
       lr=0.01, weight_decay=0.0001, modalnum=modalnum,
       save_encoder='avmnist_unimodal_0_encoder.pt', save_head='avmnist_unimodal_0_head.pt')
 

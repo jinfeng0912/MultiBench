@@ -6,7 +6,6 @@ import json
 from torch.utils.data import Dataset, DataLoader
 import h5py
 from gensim.models import KeyedVectors
-from .vgg import VGGClassifier
 from robustness.text_robust import add_text_noise
 from robustness.visual_robust import add_visual_noise
 import os
@@ -110,7 +109,8 @@ def _process_data(filename, path):
     return data
 
 
-def get_dataloader(path: str, test_path: str, num_workers: int = 8, train_shuffle: bool = True, batch_size: int = 40, vgg: bool = False, skip_process=False, no_robust=False) -> Tuple[Dict]:
+def get_dataloader(path: str, test_path: str, num_workers: int = 8, train_shuffle: bool = True, batch_size: int = 40, vgg: bool = False, skip_process=False, no_robust=False,
+                   max_train: int = None, max_val: int = None, max_test: int = None) -> Tuple[Dict]:
     """Get dataloaders for IMDB dataset.
 
     Args:
@@ -126,24 +126,38 @@ def get_dataloader(path: str, test_path: str, num_workers: int = 8, train_shuffl
     Returns:
         Tuple[Dict]: Tuple of Training dataloader, Validation dataloader, Test Dataloader
     """
-    train_dataloader = DataLoader(IMDBDataset(path, 0, 15552, vgg),
+    # default splits
+    _train_start, _train_end_full = 0, 15552
+    _val_start, _val_end_full = 15552, 18160
+    _test_start, _test_end_full = 18160, 25959
+    # apply optional subsetting
+    train_end = _train_start + (max_train if (max_train is not None) else (_train_end_full - _train_start))
+    train_end = min(train_end, _train_end_full)
+    val_end = _val_start + (max_val if (max_val is not None) else (_val_end_full - _val_start))
+    val_end = min(val_end, _val_end_full)
+    test_end = _test_start + (max_test if (max_test is not None) else (_test_end_full - _test_start))
+    test_end = min(test_end, _test_end_full)
+
+    train_dataloader = DataLoader(IMDBDataset(path, _train_start, train_end, vgg),
                                   shuffle=train_shuffle, num_workers=num_workers, batch_size=batch_size)
-    val_dataloader = DataLoader(IMDBDataset(path, 15552, 18160, vgg),
+    val_dataloader = DataLoader(IMDBDataset(path, _val_start, val_end, vgg),
                                 shuffle=False, num_workers=num_workers, batch_size=batch_size)
     if no_robust:
-        test_dataloader = DataLoader(IMDBDataset(path, 18160, 25959, vgg),
+        test_dataloader = DataLoader(IMDBDataset(path, _test_start, test_end, vgg),
                                      shuffle=False, num_workers=num_workers, batch_size=batch_size)
         return train_dataloader, val_dataloader, test_dataloader
 
     test_dataset = h5py.File(path, 'r')
-    test_text = test_dataset['features'][18160:25959]
-    test_vision = test_dataset['vgg_features'][18160:25959]
-    labels = test_dataset["genres"][18160:25959]
-    names = test_dataset["imdb_ids"][18160:25959]
+    test_text = test_dataset['features'][_test_start:test_end]
+    test_vision = test_dataset['vgg_features'][_test_start:test_end]
+    labels = test_dataset["genres"][_test_start:test_end]
+    names = test_dataset["imdb_ids"][_test_start:test_end]
 
     dataset = os.path.join(test_path, "dataset")
 
     if not skip_process:
+        # Lazy import to avoid Theano dependency unless needed
+        from .vgg import VGGClassifier
         clsf = VGGClassifier(
             model_path='/home/pliang/multibench/MultiBench/datasets/imdb/vgg16.tar', synset_words='synset_words.txt')
         googleword2vec = KeyedVectors.load_word2vec_format(

@@ -13,9 +13,11 @@ from training_structures.Supervised_Learning import train, test
 
 filename = 'bestmi.pt'
 traindata, validdata, testdata = get_dataloader(
-    '/home/hejinfeng/datasets/AV_MNIST',
-    batch_size=16,
-    num_workers=0)
+    '/mnt/e/Laboratory/datasets/AV_MNIST',
+    batch_size=32,
+    num_workers=0,
+    max_train=12000,
+    max_test=3000)
 channels = 6
 encoders = [LeNet(1, channels, 3).cuda(), LeNet(1, channels, 5).cuda()]
 head = MLP(channels*40, 100, 10).cuda()
@@ -24,7 +26,7 @@ head = MLP(channels*40, 100, 10).cuda()
 fusion = MultiplicativeInteractions2Modal(
     [channels*8, channels*32], channels*40, 'matrix')
 
-train(encoders, fusion, head, traindata, validdata, 1,
+train(encoders, fusion, head, traindata, validdata, 10,
       optimtype=torch.optim.SGD, lr=0.05, weight_decay=0.0001, save=filename)
 
 print("Testing:")

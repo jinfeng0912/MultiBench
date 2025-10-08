@@ -58,6 +58,10 @@ def get_data(device, configs, filedirprefix="", unimodal=None, output='contact_n
     for file in os.listdir(configs['dataset']):
         if file.endswith(".h5"):
             filename_list.append(configs['dataset'] + file)
+    # Optional: limit number of files to accelerate pairing
+    max_files = configs.get('max_files', None)
+    if isinstance(max_files, int) and max_files > 0:
+        filename_list = filename_list[:max_files]
 
     print(
         "Number of files in multifile dataset = {}".format(len(filename_list))
@@ -112,7 +116,12 @@ def get_data(device, configs, filedirprefix="", unimodal=None, output='contact_n
         episode_length=configs['ep_length'],
         training_type=configs['training_type'],
         action_dim=configs['action_dim'],
-        filedirprefix=filedirprefix
+        filedirprefix=filedirprefix,
+        pairing_tolerance=configs.get('pairing_tolerance', 0.06),
+        max_pair_trials=configs.get('max_pair_trials', 50),
+        pairs_cache_dir=configs.get('pairs_cache_dir', None),
+        skip_pairing=configs.get('skip_pairing', False),
+        verbose=configs.get('verbose_pairing', False)
     )
 
     datasets["val"] = MultimodalManipulationDataset(
@@ -128,6 +137,11 @@ def get_data(device, configs, filedirprefix="", unimodal=None, output='contact_n
         episode_length=configs['ep_length'],
         training_type=configs['training_type'],
         action_dim=configs['action_dim'],
+        pairing_tolerance=configs.get('pairing_tolerance', 0.06),
+        max_pair_trials=configs.get('max_pair_trials', 50),
+        pairs_cache_dir=configs.get('pairs_cache_dir', None),
+        skip_pairing=configs.get('skip_pairing', False),
+        verbose=configs.get('verbose_pairing', False)
 
     )
 

@@ -13,10 +13,14 @@ from training_structures.architecture_search import train
 
 
 traindata, validdata, testdata = get_dataloader(
-    '/mnt/e/Laboratory/datasets/AV_MNIST', batch_size=32)
+    '/mnt/e/Laboratory/datasets/AV_MNIST',
+    batch_size=32,
+    num_workers=0,
+    max_train=12000,
+    max_test=3000)
 
 s_data = train(['pretrained/avmnist/image_encoder.pt', 'pretrained/avmnist/audio_encoder.pt'], 16, 10, [(6, 12, 24), (6, 12, 24, 48, 96)],
-               traindata, validdata, surr.SimpleRecurrentSurrogate().cuda(), (3, 5, 2), epochs=6)
+               traindata, validdata, surr.SimpleRecurrentSurrogate().cuda(), (3, 5, 2), epochs=10)
 
 """
 print("Testing:")

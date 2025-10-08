@@ -15,7 +15,11 @@ from objective_functions.objectives_for_supervised_learning import CCA_objective
 
 
 traindata, validdata, testdata = get_dataloader(
-    '/mnt/e/Laboratory/datasets/AV_MNIST', batch_size=16, num_workers=0)
+    '/mnt/e/Laboratory/datasets/AV_MNIST',
+    batch_size=32,
+    num_workers=0,
+    max_train=12000,
+    max_test=3000)
 channels = 6
 encoders = [LeNet(1, channels, 3).cuda(), Sequential2(
     LeNet(1, channels, 5), Linear(192, 48, xavier_init=True)).cuda()]
@@ -26,7 +30,7 @@ encoders = [LeNet(1, channels, 3).cuda(), Sequential2(
 head = Linear(96, 10, xavier_init=True).cuda()
 fusion = Concat().cuda()
 
-train(encoders, fusion, head, traindata, validdata, 8,
+train(encoders, fusion, head, traindata, validdata, 10,
       save="best_cca.pt", optimtype=torch.optim.AdamW, lr=1e-2, objective=CCA_objective(48), objective_args_dict={})
 # ,weight_decay=0.01)
 
